@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>充电记录</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  :root {
+    --primary: #4f86f7;
+    --primary-light: #e8f0fe;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #e8eaed;
+    --text: #202124;
+    --text-sub: #5f6368;
+    --text-hint: #9aa0a6;
+    --green: #34a853;
+    --red: #ea4335;
+    --orange: #fbbc04;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    background: var(--primary);
+    color: #fff;
+    padding: 16px 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(79,134,247,0.3);
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header-sub { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+  /* ===== Tab Bar ===== */
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 72px;
+    z-index: 99;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 12px 8px;
+    font-size: 14px;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+  /* ===== Pages ===== */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* ===== Cards ===== */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title { font-size: 15px; font-weight: 600; }
+  .card-date { font-size: 13px; color: var(--text-sub); }
+  .card-body { padding: 12px 16px; }
+
+  /* ===== Record Grid ===== */
+  .record-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+  }
+  .record-item label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-hint);
+    margin-bottom: 3px;
+  }
+  .record-item .val {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .record-item .val.calc { color: var(--primary); }
+  .record-item .val.empty { color: var(--text-hint); font-size: 13px; }
+
+  /* ===== Form ===== */
+  .form-section {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .form-section-title {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    background: #f8f9fa;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-row:last-child { border-bottom: none; }
+  .form-label {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .form-label span {
+    display: block;
+    font-size: 11px;
+    color: var(--text-hint);
+    margin-top: 2px;
+  }
+  .form-input {
+    width: 140px;
+    text-align: right;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    color: var(--text);
+    background: transparent;
+    font-family: inherit;
+  }
+  .form-input::placeholder { color: var(--text-hint); }
+  .form-input:focus { color: var(--primary); }
+  .form-unit {
+    font-size: 13px;
+    color: var(--text-hint);
+    margin-left: 4px;
+    white-space: nowrap;
+  }
+  .form-calc {
+    width: 140px;
+    text-align: right;
+    font-size: 15px;
+    color: var(--primary);
+  }
+  .form-date-display {
+    width: 140px;
+    text-align: right;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .form-date-display.auto { color: var(--green); }
+  .form-date-display.empty { color: var(--text-hint); font-size: 13px; }
+
+  /* ===== Buttons ===== */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn-danger { background: #fce8e6; color: var(--red); }
+  .btn-success { background: #e6f4ea; color: var(--green); }
+
+  /* ===== Stats ===== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .stat-val { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+
+  /* ===== Empty State ===== */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-hint);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== Modal ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 0 0 24px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    text-align: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  /* ===== List view ===== */
+  .record-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .record-card:active { transform: scale(0.99); }
+  .record-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, var(--primary-light), #fff);
+  }
+  .record-card-date { font-size: 15px; font-weight: 600; color: var(--primary); }
+  .record-card-km { font-size: 13px; color: var(--text-sub); }
+  .record-card-body {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    padding: 10px 16px 12px;
+  }
+  .rc-item { text-align: center; }
+  .rc-item label { display: block; font-size: 10px; color: var(--text-hint); margin-bottom: 3px; }
+  .rc-item .rc-val { font-size: 14px; font-weight: 500; }
+  .rc-item .rc-val.empty { color: var(--text-hint); }
+
+  /* ===== Bottom Nav ===== */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--text-hint);
+    font-size: 11px;
+    transition: color 0.2s;
+  }
+  .nav-item.active { color: var(--primary); }
+  .nav-icon { font-size: 22px; line-height: 1; }
+
+  /* ===== Month badge ===== */
+  .month-badge {
+    display: inline-block;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 6px;
+  }
+
+  .charger-toggle {
+    display: flex;
+    gap: 8px;
+  }
+  .charger-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    font-size: 14px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-sub);
+    transition: all 0.15s;
+  }
+  .charger-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  .section-divider {
+    font-size: 12px;
+    color: var(--text-hint);
+    padding: 8px 4px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .efficiency-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .efficiency-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--green), var(--primary));
+    transition: width 0.4s ease;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ 充电记录</h1>
+  <div class="header-sub" id="headerSub">加载中...</div>
+</div>
+
+<!-- Pages -->
+<div class="page active" id="page-home">
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-bottom:12px; margin-top:4px;">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-total">0</div>
+      <div class="stat-label">总充电次数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-month">0</div>
+      <div class="stat-label">本月充电次数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-kwh" style="font-size:18px;">0.0</div>
+      <div class="stat-label">本月电表电量(kWh)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-cost" style="font-size:18px;">¥0.0</div>
+      <div class="stat-label">本月充电金额</div>
+    </div>
+  </div>
+
+  <!-- Records List -->
+  <div id="recordsList"></div>
+</div>
+
+<div class="page" id="page-add">
+  <div style="margin-top:4px;">
+    <!-- 日期显示 -->
+    <div class="form-section">
+      <div class="form-section-title">📅 充电日期</div>
+      <div class="form-row">
+        <div class="form-label">充电日期<span>输入里程后自动填入</span></div>
+        <div class="form-date-display empty" id="formDateDisplay">待填入</div>
+      </div>
+    </div>
+
+    <!-- 手动输入 -->
+    <div class="form-section">
+      <div class="form-section-title">✏️ 手动输入</div>
+      <div class="form-row">
+        <div class="form-label">充电前WLTP里程<span>触发日期自动填入</span></div>
+        <input class="form-input" id="inp-B" type="number" inputmode="decimal" placeholder="输入里程" oninput="onManualInput()">
+        <span class="form-unit">km</span>
+      </div>
+      <div class="form-row">
+        <div class="form-label">总里程<span>触发日期自动填入</span></div>
+        <input class="form-input" id="inp-H" type="number" inputmode="decimal" placeholder="输入里程" oninput="onManualInput()">
+        <span class="form-unit">km</span>
+      </div>
+    </div>
+
+    <!-- 自动计算 -->
+    <div class="form-section">
+      <div class="form-section-title">🔢 自动计算</div>
+      <div class="form-row">
+        <div class="form-label">充电后WLTP里程<span>固定值</span></div>
+        <div class="form-calc">495 km</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">本次循环次数增量</div>
+        <div class="form-calc" id="calc-D">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">本次充电量</div>
+        <div class="form-calc" id="calc-E">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">电表电量</div>
+        <div class="form-calc" id="calc-F">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">充电金额</div>
+        <div class="form-calc" id="calc-G">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">区间里程<span>与上次总里程之差</span></div>
+        <div class="form-calc" id="calc-I">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">WLTP区间里程</div>
+        <div class="form-calc" id="calc-L">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">区间能耗</div>
+        <div class="form-calc" id="calc-M">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">当月累计循环次数</div>
+        <div class="form-calc" id="calc-J">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">当月累计电表电量</div>
+        <div class="form-calc" id="calc-O">—</div>
+      </div>
+    </div>
+
+    <!-- 充电桩 -->
+    <div class="form-section">
+      <div class="form-section-title">🔌 充电桩</div>
+      <div class="form-row">
+        <div class="form-label">充电桩类型</div>
+        <div class="charger-toggle">
+          <button class="charger-btn active" id="btn-home" onclick="setCharger('家充')">家充</button>
+          <button class="charger-btn" id="btn-public" onclick="setCharger('公充')">公充</button>
+        </div>
+      </div>
+      <div class="form-row" id="row-efficiency">
+        <div class="form-label">家充效率<span>可修改</span></div>
+        <input class="form-input" id="inp-K" type="number" inputmode="decimal" value="0.82" oninput="onManualInput()">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="clearForm()">清空</button>
+      <button class="btn btn-primary" onclick="saveRecord()">保存记录</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-stats">
+  <div style="margin-top:4px;" id="statsContent"></div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="switchPage('home')">
+    <div class="nav-icon">📋</div>记录
+  </div>
+  <div class="nav-item" id="nav-add" onclick="switchPage('add')">
+    <div class="nav-icon">➕</div>新增
+  </div>
+  <div class="nav-item" id="nav-stats" onclick="switchPage('stats')">
+    <div class="nav-icon">📊</div>统计
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="closeEditModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="editModalTitle">编辑记录</div>
+    <div id="editModalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteRecord()">删除</button>
+      <button class="btn btn-outline" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== 数据存储 =====================
+const STORAGE_KEY = 'ev_charge_records_v2';
+let records = [];
+let editingId = null;
+let formAutoDate = null;
+let formCharger = '家充';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) records = JSON.parse(raw);
+  } catch(e) { records = []; }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+// ===================== 公式计算 =====================
+const C_FIXED = 495;    // 充电后WLTP里程（固定）
+const PRICE   = 0.38;   // 电价 元/kWh
+
+function calcRow(b, h, k, prevH, allRecords, thisDate) {
+  const result = { C: C_FIXED };
+  const bNum = parseFloat(b);
+  const hNum = parseFloat(h);
+  const kNum = parseFloat(k) || 0.82;
+
+  if (!isNaN(bNum) && bNum !== '') {
+    result.D = (C_FIXED - bNum) / C_FIXED;
+    result.E = result.D * 60.7;
+    result.F = result.E / kNum;
+    result.G = result.F * PRICE;
+    result.L = (C_FIXED - bNum); // C - B
+  }
+
+  if (!isNaN(hNum) && hNum !== '') {
+    if (prevH !== null && prevH !== undefined && !isNaN(prevH)) {
+      result.I = hNum - prevH;
+    } else {
+      result.I = hNum; // 第一行
+    }
+  }
+
+  if (result.F !== undefined && result.I !== undefined && result.I !== 0) {
+    result.M = result.F / (result.I / 100);
+  }
+
+  // 当月累计（需要全部记录）
+  if (thisDate && allRecords) {
+    const ym = thisDate.substring(0, 7); // YYYY-MM
+    let cumD = 0, cumF = 0;
+    for (const rec of allRecords) {
+      if (!rec.date) continue;
+      if (rec.date.substring(0, 7) !== ym) continue;
+      if (rec.date > thisDate) continue; // 只算到当前行
+      cumD += (rec.calcD || 0);
+      cumF += (rec.calcF || 0);
+    }
+    // 加上当前行
+    cumD += (result.D || 0);
+    cumF += (result.F || 0);
+    result.J = cumD;
+    result.O = cumF;
+  }
+
+  return result;
+}
+
+function fmt(val, decimals=2) {
+  if (val === null || val === undefined || isNaN(val)) return '—';
+  return parseFloat(val.toFixed(decimals)).toString();
+}
+
+// ===================== 日期逻辑 =====================
+function getTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function getUniqueDate(excludeId = null) {
+  // 获取所有已用日期
+  const usedDates = new Set(
+    records.filter(r => r.id !== excludeId && r.date).map(r => r.date)
+  );
+  let d = new Date();
+  for (let i = 0; i <= 365; i++) {
+    const str = d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+    if (!usedDates.has(str)) return str;
+    d.setDate(d.getDate() - 1);
+  }
+  return getTodayStr();
+}
+
+function formatDateDisplay(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, day] = dateStr.split('-');
+  return `${y}/${parseInt(m)}/${parseInt(day)}`;
+}
+
+// ===================== 表单逻辑 =====================
+function onManualInput() {
+  const b = document.getElementById('inp-B').value;
+  const h = document.getElementById('inp-H').value;
+  const k = document.getElementById('inp-K').value || '0.82';
+
+  // 自动填日期
+  const hasInput = (b.trim() !== '' || h.trim() !== '');
+  const dateEl = document.getElementById('formDateDisplay');
+  if (hasInput) {
+    if (!formAutoDate) {
+      formAutoDate = getUniqueDate();
+    }
+    dateEl.textContent = formatDateDisplay(formAutoDate);
+    dateEl.className = 'form-date-display auto';
+  } else {
+    formAutoDate = null;
+    dateEl.textContent = '待填入';
+    dateEl.className = 'form-date-display empty';
+  }
+
+  // 计算
+  const prevH = records.length > 0 ? records[records.length-1].H : null;
+  const calc = calcRow(b, h, k, prevH, null, formAutoDate);
+
+  const setCalc = (id, val, unit='') => {
+    const el = document.getElementById('calc-' + id);
+    if (!el) return;
+    el.textContent = val !== undefined && !isNaN(val) ? fmt(val) + (unit ? ' ' + unit : '') : '—';
+  };
+
+  setCalc('D', calc.D);
+  setCalc('E', calc.E, 'kWh');
+  setCalc('F', calc.F, 'kWh');
+  setCalc('G', calc.G ? calc.G : undefined); 
+  if (calc.G !== undefined) document.getElementById('calc-G').textContent = '¥' + fmt(calc.G);
+  setCalc('I', calc.I, 'km');
+  setCalc('L', calc.L, 'km');
+  setCalc('M', calc.M, 'kWh/百km');
+
+  // 当月累计（预览当前输入后）
+  if (formAutoDate) {
+    const ym = formAutoDate.substring(0, 7);
+    let cumD = 0, cumF = 0;
+    for (const rec of records) {
+      if (!rec.date || rec.date.substring(0,7) !== ym) continue;
+      cumD += (rec.calcD || 0);
+      cumF += (rec.calcF || 0);
+    }
+    cumD += (calc.D || 0);
+    cumF += (calc.F || 0);
+    document.getElementById('calc-J').textContent = fmt(cumD);
+    document.getElementById('calc-O').textContent = fmt(cumF) + ' kWh';
+  } else {
+    document.getElementById('calc-J').textContent = '—';
+    document.getElementById('calc-O').textContent = '—';
+  }
+}
+
+function setCharger(type) {
+  formCharger = type;
+  document.getElementById('btn-home').className = 'charger-btn' + (type === '家充' ? ' active' : '');
+  document.getElementById('btn-public').className = 'charger-btn' + (type === '公充' ? ' active' : '');
+  document.getElementById('row-efficiency').style.display = type === '家充' ? '' : 'none';
+  onManualInput();
+}
+
+function clearForm() {
+  document.getElementById('inp-B').value = '';
+  document.getElementById('inp-H').value = '';
+  document.getElementById('inp-K').value = '0.82';
+  formAutoDate = null;
+  setCharger('家充');
+  onManualInput();
+}
+
+function saveRecord() {
+  const b = document.getElementById('inp-B').value.trim();
+  const h = document.getElementById('inp-H').value.trim();
+  const k = document.getElementById('inp-K').value.trim() || '0.82';
+
+  if (!b && !h) { showToast('请输入充电前WLTP里程或总里程'); return; }
+  if (!formAutoDate) { showToast('日期异常，请重新输入数据'); return; }
+
+  const prevH = records.length > 0 ? records[records.length-1].H : null;
+  const calc = calcRow(b, h, k, prevH, records, formAutoDate);
+
+  const rec = {
+    id: Date.now().toString(),
+    date: formAutoDate,
+    B: b !== '' ? parseFloat(b) : null,
+    H: h !== '' ? parseFloat(h) : null,
+    K: parseFloat(k),
+    N: formCharger,
+    calcD: calc.D,
+    calcE: calc.E,
+    calcF: calc.F,
+    calcG: calc.G,
+    calcI: calc.I,
+    calcJ: calc.J,
+    calcL: calc.L,
+    calcM: calc.M,
+    calcO: calc.O,
+  };
+
+  records.push(rec);
+  // 重新计算所有记录的当月累计
+  recalcAllCumulative();
+  saveData();
+  clearForm();
+  showToast('✅ 记录已保存');
+  switchPage('home');
+}
+
+// 重新计算所有记录的当月累计数据（当增删改时调用）
+function recalcAllCumulative() {
+  // 按日期排序
+  records.sort((a, b) => (a.date || '') < (b.date || '') ? -1 : 1);
+  for (let i = 0; i < records.length; i++) {
+    const rec = records[i];
+    if (!rec.date) continue;
+    const ym = rec.date.substring(0, 7);
+    let cumD = 0, cumF = 0;
+    for (let j = 0; j <= i; j++) {
+      if (!records[j].date || records[j].date.substring(0,7) !== ym) continue;
+      cumD += (records[j].calcD || 0);
+      cumF += (records[j].calcF || 0);
+    }
+    rec.calcJ = cumD;
+    rec.calcO = cumF;
+
+    // 重新计算 I（区间里程）
+    if (i === 0) {
+      rec.calcI = rec.H || null;
+    } else {
+      const prevH = records[i-1].H;
+      rec.calcI = (rec.H !== null && prevH !== null) ? rec.H - prevH : null;
+    }
+
+    // 重新计算 M（区间能耗）
+    if (rec.calcF && rec.calcI && rec.calcI !== 0) {
+      rec.calcM = rec.calcF / (rec.calcI / 100);
+    }
+  }
+}
+
+// ===================== 列表页 =====================
+function renderHome() {
+  const list = document.getElementById('recordsList');
+  const today = getTodayStr();
+  const todayYM = today.substring(0, 7);
+
+  // 统计
+  let monthCount = 0, monthKwh = 0, monthCost = 0;
+  for (const r of records) {
+    if (r.date && r.date.substring(0,7) === todayYM) {
+      monthCount++;
+      monthKwh += (r.calcF || 0);
+      monthCost += (r.calcG || 0);
+    }
+  }
+  document.getElementById('stat-total').textContent = records.length;
+  document.getElementById('stat-month').textContent = monthCount;
+  document.getElementById('stat-kwh').textContent = fmt(monthKwh, 1);
+  document.getElementById('stat-cost').textContent = '¥' + fmt(monthCost, 1);
+
+  // Header sub
+  document.getElementById('headerSub').textContent =
+    `共 ${records.length} 条记录 · ${today.replace(/-/g,'/')}`;
+
+  if (records.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔋</div>
+      <div class="empty-text">还没有充电记录<br>点击下方 ➕ 新增记录</div>
+    </div>`;
+    return;
+  }
+
+  // 按日期倒序显示
+  const sorted = [...records].sort((a, b) => (a.date||'') > (b.date||'') ? -1 : 1);
+  let html = '';
+  let lastYM = '';
+  for (const rec of sorted) {
+    const ym = rec.date ? rec.date.substring(0,7) : '';
+    if (ym !== lastYM) {
+      lastYM = ym;
+      const [y, m] = ym.split('-');
+      html += `<div class="section-divider">${y}年${parseInt(m)}月</div>`;
+    }
+    html += renderRecordCard(rec);
+  }
+  list.innerHTML = html;
+}
+
+function renderRecordCard(rec) {
+  const dateStr = formatDateDisplay(rec.date);
+  const d = fmt(rec.calcD, 3);
+  const f = rec.calcF !== undefined ? fmt(rec.calcF, 2) + ' kWh' : '—';
+  const g = rec.calcG !== undefined ? '¥' + fmt(rec.calcG, 2) : '—';
+  const i_km = rec.calcI !== undefined && rec.calcI !== null ? fmt(rec.calcI, 0) + ' km' : '—';
+  const m_val = rec.calcM !== undefined ? fmt(rec.calcM, 1) : '—';
+  const b_val = rec.B !== null && rec.B !== undefined ? rec.B + ' km' : '—';
+
+  return `<div class="record-card" onclick="openEdit('${rec.id}')">
+    <div class="record-card-header">
+      <div class="record-card-date">📅 ${dateStr}</div>
+      <div class="record-card-km">总里程 ${rec.H !== null && rec.H !== undefined ? rec.H + ' km' : '—'}</div>
+    </div>
+    <div class="record-card-body">
+      <div class="rc-item"><label>充电前里程</label><div class="rc-val">${b_val}</div></div>
+      <div class="rc-item"><label>电表电量</label><div class="rc-val">${f}</div></div>
+      <div class="rc-item"><label>充电金额</label><div class="rc-val">${g}</div></div>
+      <div class="rc-item"><label>区间里程</label><div class="rc-val">${i_km}</div></div>
+      <div class="rc-item"><label>循环增量</label><div class="rc-val">${d}</div></div>
+      <div class="rc-item"><label>区间能耗</label><div class="rc-val ${rec.calcM ? '' : 'empty'}">${m_val !== '—' ? m_val + ' kWh/百' : '—'}</div></div>
+    </div>
+  </div>`;
+}
+
+// ===================== 统计页 =====================
+function renderStats() {
+  const el = document.getElementById('statsContent');
+  if (records.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">暂无数据</div></div>`;
+    return;
+  }
+
+  // 按月分组
+  const byMonth = {};
+  for (const r of records) {
+    const ym = r.date ? r.date.substring(0,7) : '未知';
+    if (!byMonth[ym]) byMonth[ym] = [];
+    byMonth[ym].push(r);
+  }
+
+  const months = Object.keys(byMonth).sort().reverse();
+  let html = '';
+
+  for (const ym of months) {
+    const recs = byMonth[ym];
+    const [y, m] = ym.split('-');
+    const totalF = recs.reduce((s, r) => s + (r.calcF || 0), 0);
+    const totalG = recs.reduce((s, r) => s + (r.calcG || 0), 0);
+    const totalI = recs.reduce((s, r) => s + (r.calcI || 0), 0);
+    const lastRec = recs[recs.length-1];
+    const cumD = lastRec ? (lastRec.calcJ || 0) : 0;
+    const avgM = totalI > 0 ? totalF / (totalI / 100) : null;
+
+    html += `<div class="card">
+      <div class="card-header">
+        <div class="card-title">${y}年${parseInt(m)}月</div>
+        <div class="card-date">${recs.length} 次充电</div>
+      </div>
+      <div class="card-body">
+        <div class="record-grid">
+          <div class="record-item"><label>累计循环次数</label><div class="val calc">${fmt(cumD, 3)}</div></div>
+          <div class="record-item"><label>累计电表电量</label><div class="val calc">${fmt(totalF, 2)} kWh</div></div>
+          <div class="record-item"><label>累计行驶里程</label><div class="val calc">${fmt(totalI, 0)} km</div></div>
+          <div class="record-item"><label>累计充电金额</label><div class="val calc">¥${fmt(totalG, 2)}</div></div>
+          ${avgM ? `<div class="record-item"><label>月均能耗</label><div class="val calc">${fmt(avgM, 1)} kWh/百km</div></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ===================== 编辑 =====================
+function openEdit(id) {
+  editingId = id;
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+
+  document.getElementById('editModalTitle').textContent = `编辑 ${formatDateDisplay(rec.date)}`;
+
+  const body = document.getElementById('editModalBody');
+  body.innerHTML = `
+    <div style="padding:0 16px;">
+      <div class="form-section" style="margin-top:12px;">
+        <div class="form-row">
+          <div class="form-label">充电前WLTP里程<span>km</span></div>
+          <input class="form-input" id="edit-B" type="number" inputmode="decimal" value="${rec.B ?? ''}" placeholder="—">
+          <span class="form-unit">km</span>
+        </div>
+        <div class="form-row">
+          <div class="form-label">总里程<span>km</span></div>
+          <input class="form-input" id="edit-H" type="number" inputmode="decimal" value="${rec.H ?? ''}" placeholder="—">
+          <span class="form-unit">km</span>
+        </div>
+        <div class="form-row">
+          <div class="form-label">家充效率</div>
+          <input class="form-input" id="edit-K" type="number" inputmode="decimal" value="${rec.K ?? 0.82}" placeholder="0.82">
+        </div>
+        <div class="form-row">
+          <div class="form-label">充电日期</div>
+          <input class="form-input" id="edit-date" type="date" value="${rec.date ?? ''}" style="width:160px;text-align:right;">
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('editModal')) return;
+  document.getElementById('editModal').classList.remove('show');
+  editingId = null;
+}
+
+function saveEdit() {
+  if (!editingId) return;
+  const idx = records.findIndex(r => r.id === editingId);
+  if (idx < 0) return;
+
+  const b = document.getElementById('edit-B').value.trim();
+  const h = document.getElementById('edit-H').value.trim();
+  const k = document.getElementById('edit-K').value.trim() || '0.82';
+  const date = document.getElementById('edit-date').value;
+
+  const prevH = idx > 0 ? records[idx-1].H : null;
+  const calc = calcRow(b, h, k, prevH, records, date);
+
+  records[idx] = {
+    ...records[idx],
+    date,
+    B: b !== '' ? parseFloat(b) : null,
+    H: h !== '' ? parseFloat(h) : null,
+    K: parseFloat(k),
+    calcD: calc.D,
+    calcE: calc.E,
+    calcF: calc.F,
+    calcG: calc.G,
+    calcI: calc.I,
+    calcL: calc.L,
+    calcM: calc.M,
+  };
+
+  recalcAllCumulative();
+  saveData();
+  closeEditModal();
+  showToast('✅ 已更新');
+  renderHome();
+}
+
+function deleteRecord() {
+  if (!editingId) return;
+  if (!confirm('确认删除这条记录？')) return;
+  records = records.filter(r => r.id !== editingId);
+  recalcAllCumulative();
+  saveData();
+  closeEditModal();
+  showToast('已删除');
+  renderHome();
+}
+
+// ===================== 页面切换 =====================
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+
+  if (name === 'home') renderHome();
+  if (name === 'stats') renderStats();
+  if (name === 'add') onManualInput();
+
+  window.scrollTo(0, 0);
+}
+
+// ===================== Toast =====================
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ===================== 初始化 =====================
+loadData();
+recalcAllCumulative();
+renderHome();
+</script>
+</body>
+</html>
